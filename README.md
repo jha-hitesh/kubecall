@@ -36,7 +36,7 @@ These are the additional commands which kubecall adds.
 
 * `execute-cmd` `<context_name>` `<deployment_pattern>` `<executable_cmd>` : executes given executable cmd on a pod identified by given deployment pattern in given context. if more than one matching pod is found then a list is presented to choose from.
 
-* `execute-cmd-all` `<contAuthorsext_name>` `<deployment_pattern>` `<executable_cmd>` : works same as above except if more than 1 pod is found command is executed on all of them. might be useful for cache invalidation cases.
+* `execute-cmd-all` `<context_name>` `<deployment_pattern>` `<executable_cmd>` : works same as above except if more than 1 pod is found command is executed on all of them. might be useful for cache invalidation cases.
 
 ## Running the tests
 * will be added
