@@ -1,0 +1,221 @@
+#!/bin/bash
+function kubecall_main() {
+    # Globals
+    SWITCH_CONTEXT="switch-context-kc"
+    LIST_CONTEXT="list-context-kc"
+    CURRENT_CONTEXT="current-context-kc"
+    LIST_PODS="list-pods-kc"
+    LOGS="logs-kc"
+    TAIL="tail"
+    FOLLOW="follow"
+    EXECUTE="execute-kc"
+    EXECUTE_ALL="execute-all-kc"
+    LINE_SEPERATOR="\n-----------------------------------------------------------------------------------------"
+
+function kubecall_help() {
+ KUBECTL_HELP=$(kubectl --help)
+ cat << EndOfMessage
+ kubecall: A wrapper around kubectl to interact with kubernetes in a faster way with minimal effort.
+
+ kubecall provides some additional shortcut options on top of built-in kubectl along with autocompletion to
+    reduce the user effort.
+ During setup it creates a cache of available kubernetes context and list of all the pod name patterns for each
+    context.
+ This cache is used in autocompletion and which in turn allows faster context switching and pod access.
+
+ Usage:
+    $SWITCH_CONTEXT <context_name>                 : switches context to <context_name>
+    $LIST_CONTEXT <context_pattern>                : lists contexts matching <context_pattern>
+    $CURRENT_CONTEXT                               : shows current context
+    $LIST_PODS <context_name> <pod_pattern>        : lists pods matching <pod_pattern> in context <context_name>
+    $LOGS <context_name> <pod_pattern>             : tries to fetch logs of pod identified by <pod_pattern> from
+                                                      <context_name>, if more than 1 pod is found then presents
+                                                      a list of them and allows selecting one by thier numerical
+                                                      position in the list.
+
+    $EXECUTE <context_name> <pod_pattern> <CMD>    : executes a <CMD> on a pod name identified by <pod_pattern>
+                                                      in the context <context_name>, If more than 1 pod is found
+                                                      then presents a list of them and allows selecting one by thier
+                                                      numerical position in the list.
+
+    $EXECUTE_ALL <context_name> <pod_name> <CMD>   : executes a <CMD> on all pods identified by <pod_pattern> in
+                                                      the context <context_name>, also prints the output of each
+                                                      result on the stdout.
+
+ During any step if you are stuck press <tab><tab> to get a list of options for the next command argument.
+ Below is the official help for built-in kubectl commands:
+ $KUBECTL_HELP
+EndOfMessage
+}
+    function handle_help() {
+        if [[ -z $1 ]] || [[ $1 == "-h" ]] || [[ $1 == "--help" ]]; then
+            kubecall_help
+            return 1
+        fi
+        return 2
+    }
+    function handle_built_in_kubectl_commands () {
+        custom_cmd_list=($SWITCH_CONTEXT $LIST_CONTEXT $CURRENT_CONTEXT $LIST_PODS $LOGS $EXECUTE $EXECUTE_ALL)
+        for i in ${custom_cmd_list[@]}
+            do
+                if [[ $i == $1 ]]; then
+                    return 2
+                fi
+            done
+        kubectl $@
+        # RESULT=$(kubectl $@ 2>&1)
+        # KUBECALL="kubecall"
+        # echo ${RESULT//kubectl/$KUBECALL}
+        return 1
+    }
+    function handle_context_operation() {
+        active_context=$(kubectl config current-context)
+        if [[ $1 == $CURRENT_CONTEXT ]]; then
+            echo $active_context
+            return 1
+        fi
+        if [[ $1 == $SWITCH_CONTEXT ]] || [[ $1 == $LIST_CONTEXT ]]; then
+            context_list=$(kubectl config get-contexts -o=name | sort -n)
+            context_list_array=($context_list)
+            if [[ $1 == $SWITCH_CONTEXT ]]; then
+                if [[ -z $2 ]]; then
+                    echo "Context name not provided, please choose one from the below."
+                else
+                    if [[ $active_context == $2 ]]; then
+                        echo "$2 already active"
+                        return 1
+                    fi
+                    for i in ${context_list_array[@]}
+                        do
+                            if [[ $i == $2 ]]; then
+                                kubectl config use-context $2
+                                return 1
+                            fi
+                        done
+                    echo "Invalid context provided, please choose one from below"
+                fi
+            fi
+            echo -e $LINE_SEPERATOR
+            echo "$context_list" | grep --color=always -n -e '^' -e $active_context
+            echo -e $LINE_SEPERATOR
+            echo "Enter the context number to switch to or CTRL+C to exit"
+            echo "Current active context is $active_context"
+            read context_no
+            if [[ $context_no =~ '^[0-9]+$' ]] || [[ $context_no > ${#context_list_array[@]} ]]; then
+                echo "Invalid context selected, try again."
+                return 0
+            fi
+            kubectl config use-context ${context_list_array[$context_no - 1]}
+            return 1
+        fi
+        return 2
+    }
+    function handle_pod_operation() {
+        if [[ -z $2 ]]; then
+            echo "To ensure nothing wrong happens, we need context name explicitly for pod level operations."
+            return 0
+        fi
+        if [[ $1 == $EXECUTE ]] || [[ $1 == $EXECUTE_ALL ]]; then
+            if [[ -z $3 ]]; then
+                echo "Please provide a pod pattern which will be used to list pods"
+                return 0
+            fi
+            if [[ -z $4 ]]; then
+                echo "Please provide the command which will be executed on pods identified by $3"
+                return 0
+            fi
+            echo "Remember to escape quotes, slashes, $ sign etc. in your command for it to properly work."
+        fi
+        handle_context_operation $SWITCH_CONTEXT $2
+        if [[ -z $3 ]]; then
+            pod_list=$(kubectl get pods)
+        else
+            pod_list=$(kubectl get pods | grep $3)
+        fi
+        pod_list_array=($pod_list)
+        pod_list_array_length=${#pod_list_array[@]}
+
+        if [[ $pod_list_array_length == 0 ]]; then
+            echo "No matching pods found"
+            return 0
+        fi
+
+        echo "Listing out pods currently running"
+        echo "$pod_list" | grep -n '^'
+        if [[ $1 == $LIST_PODS ]]; then
+            return 0
+        fi
+
+        if [[ $1 == $EXECUTE_ALL ]]; then
+            echo "Your command $4 will be executed on all these pods, continue Yes or No?"
+            read confirm_action
+            if [[ $confirm_action == "yes" ]]; then
+                shift;shift;shift
+                executable_cmd="${@}"
+                for i in ${pod_list_array[@]}
+                    do
+                        echo "running for pod: $i"
+                        action_result=$(kubectl exec $i -- bash -c "$executable_cmd")
+                        echo $action_result
+                    done
+                echo "Execution Completed, exitting."
+            else
+                echo "Invalid input exitting."
+            fi
+            return 0
+        fi
+
+        if [[ ${#pod_list_array[@]} == 5 ]]; then
+            pod_index=0
+            echo "single pod found for pattern $3"
+        else
+            echo "Enter pod no to select a pod or CTRL+C to exit"
+            read pod_no
+            pod_index=$((($pod_no - 1)*5))
+        fi
+
+        if [[ $1 = $LOGS ]]; then
+            if [[ $4 == $TAIL ]]; then
+                if [[ -z $5 ]] || [[ $5 =~ '^[0-9]+$' ]]; then
+                    log_count=500
+                    echo "Invalid or no log count argument, defaulting to 500"
+                else
+                    log_count=$5
+                fi
+                echo "opening last $log_count logs for ${pod_list_array[$pod_index]}, CTRL+C to close."
+                kubectl logs --tail $log_count ${pod_list_array[$pod_index]}
+                return 0
+            fi
+            echo "starting to follow logs of ${pod_list_array[$pod_index]}, CTRL+C to close."
+            kubectl logs -f ${pod_list_array[$pod_index]}
+            return 0
+        fi
+
+        if [[ $1 == $EXECUTE ]]; then
+            if [[ -z $4 ]] || [[ $4 == "bash" ]]; then
+                echo "opening bash for ${pod_list_array[$pod_index]}"
+                kubectl exec -it ${pod_list_array[$pod_index]} bash
+                return 0
+            fi
+            shift;shift;shift
+            executable_cmd="${@}"
+            echo "Executing $executable_cmd on ${pod_list_array[$pod_index]}"
+            kubectl exec ${pod_list_array[$pod_index]} -- bash -c "$executable_cmd"
+            # echo $RESULT
+            return
+        fi
+        return 1
+    }
+    handle_help $@
+    done=$?; if [ $done -lt 2 ]; then return $done; fi
+    handle_built_in_kubectl_commands $@
+    done=$?; if [ $done -lt 2 ]; then return $done; fi
+    handle_context_operation $@
+    done=$?; if [ $done -lt 2 ]; then return $done; fi
+    handle_pod_operation $@
+    done=$?; if [ $done -lt 2 ]; then return $done; fi
+    echo "Invalid command provided, check help using kubecall -h or kubecall --help"
+    return 0
+}
+
+kubecall_main "$@"
