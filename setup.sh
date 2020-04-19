@@ -1,15 +1,15 @@
 #!/bin/bash
-SWITCH_CONTEXT="switch-context-kc"
-LIST_CONTEXT="list-context-kc"
-CURRENT_CONTEXT="current-context-kc"
-LIST_PODS="list-pods-kc"
-LOGS="logs-kc"
+SWITCH_CONTEXT="switch-context"
+LIST_CONTEXT="list-context"
+CURRENT_CONTEXT="current-context"
+LIST_PODS="list-pods"
+LOGS="show-logs"
 TAIL="tail"
 FOLLOW="follow"
-EXECUTE="execute-kc"
-EXECUTE_ALL="execute-all-kc"
+EXECUTE="execute-cmd"
+EXECUTE_ALL="execute-cmd-all"
 KUBECALL_SCRIPT_PATH="/usr/local/bin"
-KUBECALL_AUTO_COMPLETE_FILE_NAME="kubecall_auto_complete"
+KUBECALL_AUTO_COMPLETE_FILE_NAME="auto_complete_kubecall"
 LINE_SEPERATOR="\n---------------------------------------------------------------------------------------------------"
 
 function kubecall_setup_help() {
@@ -88,10 +88,11 @@ function create_update_kubecall_auto_complete_file() {
     echo -n "Writing kubecall to system..."
     kubecall_autocomplete_fun_def="_kubecall_completions() { ${deployments_map[@]} if [[ \"\${#COMP_WORDS[@]}\" == \"3\" ]]; then COMPREPLY=(\$(compgen -W \"$contexts\" \"\${COMP_WORDS[2]}\")); return; fi; if [[ \"\${#COMP_WORDS[@]}\" == \"2\" ]]; then COMPREPLY=(\$(compgen -W \"$kubecall_cmds_string\" \"\${COMP_WORDS[1]}\")); return; fi; }; complete -F _kubecall_completions kubecall"
 
-    touch $KUBECALL_AUTO_COMPLETE_FILE_NAME
+    touch "$KUBECALL_SCRIPT_PATH/$KUBECALL_AUTO_COMPLETE_FILE_NAME"
+    chmod 777 "$KUBECALL_SCRIPT_PATH/$KUBECALL_AUTO_COMPLETE_FILE_NAME"
     echo -n "Adding autocompletion for kubernetes contexts..."
-    echo "$kubecall_autocomplete_fun_def" >> "$PWD/$KUBECALL_AUTO_COMPLETE_FILE_NAME"
-    echo "source $PWD/$KUBECALL_AUTO_COMPLETE_FILE_NAME" >> ~/.bashrc
+    echo "$kubecall_autocomplete_fun_def" >> "$KUBECALL_SCRIPT_PATH/$KUBECALL_AUTO_COMPLETE_FILE_NAME"
+    echo "source $KUBECALL_SCRIPT_PATH/$KUBECALL_AUTO_COMPLETE_FILE_NAME" >> ~/.bashrc
     echo "Done."
 
     echo -e $LINE_SEPERATOR
@@ -111,11 +112,11 @@ function handle_add() {
 function handle_remove() {
     if [[ $1 == "remove" ]]; then
         rm -f "$KUBECALL_SCRIPT_PATH/kubecall"
-        rm -f "$PWD/$KUBECALL_AUTO_COMPLETE_FILE_NAME"
-        if grep -Fxq "source $PWD/$KUBECALL_AUTO_COMPLETE_FILE_NAME" ~/.bashrc
+        rm -f "$KUBECALL_SCRIPT_PATH/$KUBECALL_AUTO_COMPLETE_FILE_NAME"
+        if grep -Fxq "source $KUBECALL_SCRIPT_PATH/$KUBECALL_AUTO_COMPLETE_FILE_NAME" ~/.bashrc
         then
             BASHRC_FILE_PATH=$(find ~/.bashrc)
-            echo "$(grep -v "source $PWD/$KUBECALL_AUTO_COMPLETE_FILE_NAME" $BASHRC_FILE_PATH)" > "$BASHRC_FILE_PATH.bak"
+            echo "$(grep -v "source $KUBECALL_SCRIPT_PATH/$KUBECALL_AUTO_COMPLETE_FILE_NAME" $BASHRC_FILE_PATH)" > "$BASHRC_FILE_PATH.bak"
             mv "$BASHRC_FILE_PATH.bak" "$BASHRC_FILE_PATH"
         else
             echo "autocompletion not present in bashrc, Skipping it."
