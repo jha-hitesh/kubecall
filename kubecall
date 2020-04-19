@@ -1,15 +1,15 @@
 #!/bin/bash
 function kubecall_main() {
     # Globals
-    SWITCH_CONTEXT="switch-context-kc"
-    LIST_CONTEXT="list-context-kc"
-    CURRENT_CONTEXT="current-context-kc"
-    LIST_PODS="list-pods-kc"
-    LOGS="logs-kc"
+    SWITCH_CONTEXT="switch-context"
+    LIST_CONTEXT="list-context"
+    CURRENT_CONTEXT="current-context"
+    LIST_PODS="list-pods"
+    LOGS="show-logs"
     TAIL="tail"
     FOLLOW="follow"
-    EXECUTE="execute-kc"
-    EXECUTE_ALL="execute-all-kc"
+    EXECUTE="execute-cmd"
+    EXECUTE_ALL="execute-cmd-all"
     LINE_SEPERATOR="\n-----------------------------------------------------------------------------------------"
 
 function kubecall_help() {
