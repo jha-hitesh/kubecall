@@ -98,11 +98,11 @@ EndOfMessage
             echo -e $LINE_SEPERATOR
             echo "$context_list" | grep --color=always -n -e '^' -e $active_context
             echo -e $LINE_SEPERATOR
-            echo "Enter the context number to switch to or CTRL+C to exit"
             echo "Current active context is $active_context"
+            echo "Enter the context number to switch to or CTRL+C to exit"
             read context_no
-            if [[ $context_no =~ '^[0-9]+$' ]] || [[ $context_no > ${#context_list_array[@]} ]]; then
-                echo "Invalid context selected, try again."
+            if [[ $context_no -le 0 ]] || [[ $context_no -gt ${#context_list_array[@]} ]]; then
+                echo "Invalid context selected, exitting."
                 return 0
             fi
             kubectl config use-context ${context_list_array[$context_no - 1]}
@@ -172,6 +172,10 @@ EndOfMessage
             echo "Enter pod no to select a pod or CTRL+C to exit"
             read pod_no
             pod_index=$((($pod_no - 1)*5))
+            if [[ $pod_index -lt 0 ]] || [[ $pod_index -ge ${#pod_list_array[@]} ]]; then
+                echo "Invalid option selected, exitting."
+                return 0
+            fi
         fi
 
         if [[ $1 = $LOGS ]]; then
