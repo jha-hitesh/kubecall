@@ -171,6 +171,7 @@ EndOfMessage
         else
             echo "Enter pod no to select a pod or CTRL+C to exit"
             read pod_no
+            if [[ $pod_no =~ '^[0-9]+$' ]]; then echo "Invalid option, exitting"; return 0; fi;
             pod_index=$((($pod_no - 1)*5))
             if [[ $pod_index -lt 0 ]] || [[ $pod_index -ge ${#pod_list_array[@]} ]]; then
                 echo "Invalid option selected, exitting."
@@ -204,7 +205,7 @@ EndOfMessage
             shift;shift;shift
             executable_cmd="${@}"
             echo "Executing $executable_cmd on ${pod_list_array[$pod_index]}"
-            kubectl exec ${pod_list_array[$pod_index]} -- bash -c "$executable_cmd"
+            kubectl exec -it ${pod_list_array[$pod_index]} "$executable_cmd"
             # echo $RESULT
             return
         fi
