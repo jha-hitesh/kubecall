@@ -11,7 +11,7 @@ kubecall is a bash wrapper around kubectl (kubernetes management command line), 
 A working kubernetes setup and `kubectl` installed.
 
 ### Installing
-* Run `setup.sh add` with root privilages. (`sudo bash setup.sh add`)
+* Run `./setup.sh add` or `bash setup.sh add`.
 * The setup will list down all the available kubernetes contexts.
 * Select/deselect contexts for which you want to enable autocompletion feature
 * Restart bash
