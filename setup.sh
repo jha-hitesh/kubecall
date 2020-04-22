@@ -8,6 +8,7 @@ TAIL="tail"
 FOLLOW="follow"
 EXECUTE="execute-cmd"
 EXECUTE_ALL="execute-cmd-all"
+DESCRIBE_POD="describe-pod"
 KUBECALL_SCRIPT_PATH="/usr/local/bin"
 KUBECALL_AUTO_COMPLETE_FILE_NAME="auto_complete_kubecall"
 LINE_SEPERATOR="\n---------------------------------------------------------------------------------------------------"
@@ -89,7 +90,7 @@ function handle_add() {
             echo -e $LINE_SEPERATOR
         fi
 
-        kubecall_cmds_string="$SWITCH_CONTEXT $LIST_CONTEXT $CURRENT_CONTEXT $LIST_PODS $LOGS $EXECUTE $EXECUTE_ALL"
+        kubecall_cmds_string="$SWITCH_CONTEXT $LIST_CONTEXT $CURRENT_CONTEXT $LIST_PODS $LOGS $EXECUTE $EXECUTE_ALL $DESCRIBE_POD"
         kubecall_autocomplete_fun_def="_kubecall_completions() { ${deployments_map[@]} if [[ \"\${#COMP_WORDS[@]}\" == \"3\" ]]; then COMPREPLY=(\$(compgen -W \"${context_values[@]}\" \"\${COMP_WORDS[2]}\")); return; fi; if [[ \"\${#COMP_WORDS[@]}\" == \"2\" ]]; then COMPREPLY=(\$(compgen -W \"$kubecall_cmds_string\" \"\${COMP_WORDS[1]}\")); return; fi; }; complete -F _kubecall_completions kubecall"
 
         echo "Script requires root access to write kubecall to $KUBECALL_SCRIPT_PATH, you may be prompted for password"

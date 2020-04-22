@@ -10,6 +10,7 @@ function kubecall_main() {
     FOLLOW="follow"
     EXECUTE="execute-cmd"
     EXECUTE_ALL="execute-cmd-all"
+    DESCRIBE_POD="describe-pod"
     LINE_SEPERATOR="\n-----------------------------------------------------------------------------------------"
 
 function kubecall_help() {
@@ -24,11 +25,11 @@ function kubecall_help() {
  This cache is used in autocompletion and which in turn allows faster context switching and pod access.
 
  Usage:
-    $SWITCH_CONTEXT <context_name>                 : switches context to <context_name>
-    $LIST_CONTEXT <context_pattern>                : lists contexts matching <context_pattern>
-    $CURRENT_CONTEXT                               : shows current context
-    $LIST_PODS <context_name> <pod_pattern>        : lists pods matching <pod_pattern> in context <context_name>
-    $LOGS <context_name> <pod_pattern>             : tries to fetch logs of pod identified by <pod_pattern> from
+    $SWITCH_CONTEXT <context_name>                     : switches context to <context_name>
+    $LIST_CONTEXT <context_pattern>                    : lists contexts matching <context_pattern>
+    $CURRENT_CONTEXT                                   : shows current context
+    $LIST_PODS <context_name> <pod_pattern>            : lists pods matching <pod_pattern> in context <context_name>
+    $LOGS <context_name> <pod_pattern>            : tries to fetch logs of pod identified by <pod_pattern> from
                                                       <context_name>, if more than 1 pod is found then presents
                                                       a list of them and allows selecting one by thier numerical
                                                       position in the list.
@@ -41,6 +42,8 @@ function kubecall_help() {
     $EXECUTE_ALL <context_name> <pod_name> <CMD>   : executes a <CMD> on all pods identified by <pod_pattern> in
                                                       the context <context_name>, also prints the output of each
                                                       result on the stdout.
+
+    $DESCRIBE_POD <context_name> <pod_name>            : describes a pod identified by <pod_name> under given context.
 
  During any step if you are stuck press <tab><tab> to get a list of options for the next command argument.
  Below is the official help for built-in kubectl commands:
@@ -55,7 +58,7 @@ EndOfMessage
         return 2
     }
     function handle_built_in_kubectl_commands () {
-        custom_cmd_list=($SWITCH_CONTEXT $LIST_CONTEXT $CURRENT_CONTEXT $LIST_PODS $LOGS $EXECUTE $EXECUTE_ALL)
+        custom_cmd_list=($SWITCH_CONTEXT $LIST_CONTEXT $CURRENT_CONTEXT $LIST_PODS $LOGS $EXECUTE $EXECUTE_ALL $DESCRIBE_POD)
         for i in ${custom_cmd_list[@]}
             do
                 if [[ $i == $1 ]]; then
@@ -207,6 +210,11 @@ EndOfMessage
             echo "Executing $executable_cmd on ${pod_list_array[$pod_index]}"
             kubectl exec -it ${pod_list_array[$pod_index]} "$executable_cmd"
             # echo $RESULT
+            return
+        fi
+
+        if [[ $1 == $DESCRIBE_POD ]]; then
+            kubectl describe pods/${pod_list_array[$pod_index]}
             return
         fi
         return 1
