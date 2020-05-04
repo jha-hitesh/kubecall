@@ -1,17 +1,7 @@
 #!/bin/bash
-SWITCH_CONTEXT="switch-context"
-LIST_CONTEXT="list-context"
-CURRENT_CONTEXT="current-context"
-LIST_PODS="list-pods"
-LOGS="show-logs"
-TAIL="tail"
-FOLLOW="follow"
-EXECUTE="execute-cmd"
-EXECUTE_ALL="execute-cmd-all"
-DESCRIBE_POD="describe-pod"
 KUBECALL_SCRIPT_PATH="/usr/local/bin"
 KUBECALL_AUTO_COMPLETE_FILE_NAME="auto_complete_kubecall"
-LINE_SEPERATOR="\n---------------------------------------------------------------------------------------------------"
+LINE_SEPERATOR="\n"
 
 function kubecall_setup_help() {
     cat << EndOfMessage
@@ -27,10 +17,25 @@ function kubecall_setup_help() {
 EndOfMessage
 }
 
-function handle_add() {
-    if [[ $1 == "add" ]]; then
-        echo "source $KUBECALL_SCRIPT_PATH/$KUBECALL_AUTO_COMPLETE_FILE_NAME" >> ~/.bashrc
 
+function handle_add() {
+    function get_global_definition() {
+        global_definition+="declare -A deployments_map;"
+        for i in $@
+            do
+                echo -n "$i..."
+                result=$(kubectl  get deployments --context=$i -o=name | sort -n | tr "\n" " ")
+                formatted_result=("${result//deployment.extensions\//}")
+                global_definition+="deployments_map[\"$i\"]=\"$formatted_result\";"
+                echo "Done"
+            done
+    }
+    if [[ $1 == "add" ]]; then
+        if grep "source $KUBECALL_SCRIPT_PATH/$KUBECALL_AUTO_COMPLETE_FILE_NAME" ~/.bashrc;then
+            echo "exists"
+        else
+            echo "source $KUBECALL_SCRIPT_PATH/$KUBECALL_AUTO_COMPLETE_FILE_NAME" >> ~/.bashrc
+        fi
         contexts=$(kubectl config get-contexts -o=name | tr "\n" " ")
         context_values=($contexts)
         context_keys=("${!context_values[@]}")
@@ -41,7 +46,7 @@ function handle_add() {
 
         echo -e "Preparing autocompletion for contexts and it's deployments"
         echo "skip contexts from autocompletion by entering comma seperated numbers or ranged numbers"
-        echo "eg. 1-4,7-9,12,14 or presse enter to continue with all contexts"
+        echo "eg. 1-4,7-9,12,14 or press enter to continue with all contexts"
 
         echo -e $LINE_SEPERATOR
         IFS=', ' read -r -a tbs
@@ -72,36 +77,17 @@ function handle_add() {
             echo -e $LINE_SEPERATOR
         fi
 
-        deployments_map=()
+        global_definition=()
         context_values=( "${context_values[@]}" )
-        if [[ ${#context_values[@]} > 0 ]]; then
-            echo "Depending upon connection speed and number of deployments, it might take anywhere between 20sec to 1min. for each context to to be cached."
-            echo -e $LINE_SEPERATOR
-            for i in "${context_values[@]}"
-                do
-                    echo -n "Creating autocompletion for deployments under: $i ..."
-                    result=$(kubectl get deployments -o=name | sort -n | tr "\n" " ")
-                    formatted_result=("${result//deployment.extensions\//}")
-                    deployments_map+=("if [[ \${#COMP_WORDS[@]} == \"4\" ]] && [[ \${COMP_WORDS[2]} == \"$i\" ]]; then COMPREPLY=(\$(compgen -W \"$formatted_result\" \"\${COMP_WORDS[3]}\")); return; fi; ")
-                    echo "Done"
-                done
-            echo -e $LINE_SEPERATOR
-            echo "Autocompletion data calculated for selected contexts"
-            echo -e $LINE_SEPERATOR
-        fi
-
-        kubecall_cmds_string="$SWITCH_CONTEXT $LIST_CONTEXT $CURRENT_CONTEXT $LIST_PODS $LOGS $EXECUTE $EXECUTE_ALL $DESCRIBE_POD"
-        kubecall_autocomplete_fun_def="_kubecall_completions() { ${deployments_map[@]} if [[ \"\${#COMP_WORDS[@]}\" == \"3\" ]]; then COMPREPLY=(\$(compgen -W \"${context_values[@]}\" \"\${COMP_WORDS[2]}\")); return; fi; if [[ \"\${#COMP_WORDS[@]}\" == \"2\" ]]; then COMPREPLY=(\$(compgen -W \"$kubecall_cmds_string\" \"\${COMP_WORDS[1]}\")); return; fi; }; complete -F _kubecall_completions kubecall"
+        get_global_definition ${context_values[@]}
 
         echo "Script requires root access to write kubecall to $KUBECALL_SCRIPT_PATH, you may be prompted for password"
         sudo cp "$PWD/kubecall" "$KUBECALL_SCRIPT_PATH/kubecall"
         echo -n "Writing kubecall to system..."
         sudo chmod 775 "$KUBECALL_SCRIPT_PATH/kubecall"
-        sudo touch "$KUBECALL_SCRIPT_PATH/$KUBECALL_AUTO_COMPLETE_FILE_NAME"
+        sudo cp "$PWD/kubecall_completion" "$KUBECALL_SCRIPT_PATH/$KUBECALL_AUTO_COMPLETE_FILE_NAME"
         sudo chmod 777 "$KUBECALL_SCRIPT_PATH/$KUBECALL_AUTO_COMPLETE_FILE_NAME"
-        echo -n "Adding autocompletion for kubernetes contexts..."
-        echo "$kubecall_autocomplete_fun_def" >> "$KUBECALL_SCRIPT_PATH/$KUBECALL_AUTO_COMPLETE_FILE_NAME"
-        # sudo chmod 775 "$KUBECALL_SCRIPT_PATH/$KUBECALL_AUTO_COMPLETE_FILE_NAME"
+        echo "$global_definition" >> "$KUBECALL_SCRIPT_PATH/$KUBECALL_AUTO_COMPLETE_FILE_NAME"
         echo "Done."
 
         echo -e $LINE_SEPERATOR

@@ -1,0 +1,130 @@
+function completion_kubecall_main() {
+    local args
+    _get_comp_words_by_ref -n = -w args
+    context_requested=$(kubectl config current-context)
+    context_names=$(kubectl config get-contexts -o=name | tr "\n" " ")
+    context_name_array=($context_names)
+    declare -A kcac_f_and_o
+    function handle_flag_options() {
+        if [[ ${args[-1]} == "--context="* ]];then
+            COMPREPLY=($(compgen -W "$context_names" "${args[-1]#--context=}"))
+            return 1
+
+        elif [[ ${args[-1]} == -* ]];then
+            COMPREPLY=($(compgen -W "--follow --tail= -f -i -t -it --context=" "\-${args[-1]#"-"}"))
+            return 1
+        fi
+        return 2
+    }
+    function remove_flag_options() {
+        for i in ${!args[@]}
+            do
+                if [[ ${args[i]} == --* ]] && [[ ${args[i]} == *=* ]]; then
+                    old_ifs=$IFS;IFS="=";read -ra options <<< "${args[i]}";IFS=$old_ifs;
+                    if [[ -z ${options[1]} ]]; then
+                        return 0
+                    fi
+                    kcac_f_and_o[${options[0]}]=${args[i]}
+                    unset args[$i]
+                elif [[ ${args[i]} == -* ]]; then
+                    kcac_f_and_o[${args[$i]}]=${args[$i]}
+                    unset args[$i]
+                fi
+            done
+        args=( "${args[@]}" )
+        return 2
+    }
+    function remove_first_index_element() {
+        last_removed=${args[1]}
+        args=("${args[@]:0:1}" "${args[@]:2}")
+    }
+    function context_name_options() {
+        if [[ ${args[1]} == ${args[-1]} ]];then
+            COMPREPLY=($(compgen -W "$context_names" "${args[1]}"))
+            remove_first_index_element
+        else
+            remove_first_index_element
+        fi
+        return
+    }
+    function deployment_name_options() {
+        if [[ ${args[1]} == ${args[-1]} ]];then
+            if [[ ${!args[@]} > 2 ]];then
+                remove_first_index_element
+                return
+            fi
+            if [[ ${kcac_f_and_o["--context"]+isset} ]];then
+                context_requested=${kcac_f_and_o["--context"]#--context=}
+            fi
+            COMPREPLY=($(compgen -W "${deployments_map[$context_requested]}" "${args[1]}"))
+            remove_first_index_element
+        else
+            remove_first_index_element
+        fi
+
+    }
+    function get_options() {
+        if [[ ${args[1]} == "pods" ]]; then
+            remove_first_index_element
+            deployment_name_options
+            done=$?; if [ $done -lt 2 ]; then return $done; fi
+
+        else
+            COMPREPLY=($(compgen -W "pods deployments" "${args[1]}"))
+        fi
+    }
+    function context_options() {
+        if [[ ${args[1]} == "switch" ]]; then
+            remove_first_index_element
+            context_name_options
+        elif [[ ${args[1]} == "list" ]] || [[ ${args[1]} == "current" ]];then
+            remove_first_index_element
+        else
+            COMPREPLY=($(compgen -W "current switch list" "${args[1]}"))
+            remove_first_index_element
+        fi
+    }
+    function describe_options() {
+        if [[ ${args[1]} == "pod" ]]; then
+            remove_first_index_element
+            deployment_name_options
+        else
+            COMPREPLY=($(compgen -W "pod" "${args[1]}"))
+        fi
+    }
+    function delete_options() {
+        if [[ ${args[1]} == "pod" ]]; then
+            remove_first_index_element
+            deployment_name_options
+        else
+            COMPREPLY=($(compgen -W "pod" "${args[1]}"))
+        fi
+    }
+
+    handle_flag_options
+    done=$?; if [ $done -lt 2 ]; then return $done; fi
+    remove_flag_options
+    done=$?; if [ $done -lt 2 ]; then return $done; fi
+    if [[ ${args[1]} == "get" ]]; then
+        remove_first_index_element
+        get_options
+    elif [[ ${args[1]} == "context" ]]; then
+        remove_first_index_element
+        context_options
+    elif [[ ${args[1]} == "describe" ]]; then
+        remove_first_index_element
+        describe_options
+    elif [[ ${args[1]} == "delete" ]]; then
+        remove_first_index_element
+        delete_options
+    elif [[ ${args[1]} == "logs" ]]; then
+        remove_first_index_element
+        deployment_name_options
+    elif [[ ${args[1]} == "exec" ]] || [[ ${args[1]} == "execall" ]]; then
+        remove_first_index_element
+        deployment_name_options
+    else
+        COMPREPLY=($(compgen -W "context get logs describe delete exec execall" "${args[1]}"))
+    fi
+}
+complete -F completion_kubecall_main kubecall;
