@@ -3,7 +3,7 @@ kubecall is a bash wrapper around kubectl (kubernetes management command line), 
 
 ## Inspiration
 * The inspiration for **kubecall** came to solve the daily kubernetes workflows which are generally two steps. A multi clustor enviornment running diverse set of pods usually demands context switching for almost every pod interaction.
-**kubecall** solves this by merging context switching and resource interaction commands together in same line coupled with autocomplete for context names and deployment names.
+**kubecall** solves this by merging context switching and resource interaction commands together in same line coupled with autocompleton for context names and deployment names.
 
 ## Getting Started
 
@@ -14,29 +14,29 @@ A working kubernetes setup and `kubectl` installed.
 * Run `./setup.sh add` or `bash setup.sh add`.
 * The setup will list down all the available kubernetes contexts.
 * Select/deselect contexts for which you want to enable autocompletion feature
+* you will be asked for your password as installation requires access `/usr/local/bin/` folder.
 * Restart bash
 
 ## Supported commands
 Kubecall supports all the built-in kubectl commands out of the box and provides few additional of it's own.
 
 To run any built-in kubectl commands just write them as you would do with kubectl, the only difference being `kubecall` at the start instead of `kubectl`
-* eg. `kubecall get pods`, `kubectl get pods | grep my-service`, `kubectl logs -f myservice-pod` etc.
+* eg. `kubecall get pods`, `kubectl delete pod myservice-pod`, `kubectl logs -f myservice-pod` etc.
 
-These are the additional commands which kubecall adds.
+Adds following command chain:
+* `context current` displays current context
+* `context list` displays list of contexts
+* `context switch <context_name>` switches to given context
+* `execall <deployment_pattern> <CMD>` with optional `--context=<context_name>` executes given command on all the pods matching deployment_pattern after confirmation.
 
-* `current-context` : displays currently selected context
+modifies a set of commands with given syntax.
+* `logs <deployment_pattern>` with optional `--context=<context_name>` and one of (`-f`, `--follow`, `--tail=<log_count>`)
+* `exec <deployment_pattern> <CMD>` with optional `--context=<context_name>` and one of (`-i`, `-t`, `-it`)
+* `describe <deployment_pattern>` with optional `--context=<context_name>`
+* `get pods <deployment_pattern>` with optional `--context=<context_name>`
+* `delete <deployment_pattern>` with optional `--context=<context_name>` deletes pods matching given pattern after selection and confirmation.
 
-* `list-context` : displays list of available contexts with additional option to select one of them using thier numerical position in the list.
-
-* `switch-context` `<context_name>`  : switches to context name provided, if the context name is not provided or provided wrong, list of contexts is presented for selection using thier numerical position in list. user can press `<tab>` twice to get suggessions for context names.
-
-* `list-pods` `<context_name>` `<deployment_pattern>`  : presents list of pods under given context name with pod names matching given  deployment pattern. both context name and deployment pattern can be chosen from suggessions by pressing `<tab>` twice.
-
-* `show-logs` `<context_name>` `<deployment_pattern>` : fetches logs of a pod identified by deployment pattern in given context name, if more than 1 pod matching the pattern is found, matched pod list is presented with option to select one of them by thier numerical position. besides above few more arguments can be added at end such as `follow` or `tail <log_count>`. by default it will follow logs, in tail mode default log count is 500.
-
-* `execute-cmd` `<context_name>` `<deployment_pattern>` `<executable_cmd>` : executes given executable cmd on a pod identified by given deployment pattern in given context. if more than one matching pod is found then a list is presented to choose from.
-
-* `execute-cmd-all` `<context_name>` `<deployment_pattern>` `<executable_cmd>` : works same as above except if more than 1 pod is found command is executed on all of them. might be useful for cache invalidation cases.
+In any command press tab twice to get suggestion for context_name and deployment_pattern or simply for next command.
 
 ## Running the tests
 * will be added
@@ -64,3 +64,4 @@ This project is licensed under the MIT License - see the <a href="https://github
 
 ## Future enhancements
 * Identify more such reoccuring workflow and create one liner command around the workflow.
+* add auto completion for all existing kubectl commands.
