@@ -10,8 +10,17 @@ function completion_kubecall_main() {
             COMPREPLY=($(compgen -W "$context_names" "${args[-1]#--context=}"))
             return 1
 
+        elif [[ ${args[-1]} == "--tail="* ]];then
+            COMPREPLY=($(compgen -W "100 200 500" "${args[-1]#--tail=}"))
+            return 1
+
+        elif [[ ${args[-1]} == -*= ]];then
+            remove_first_index_element
+            return 1
+
         elif [[ ${args[-1]} == -* ]];then
             COMPREPLY=($(compgen -W "--follow --tail= -f -i -t -it --context=" "\-${args[-1]#"-"}"))
+            [[ $COMPREPLY == *= ]] && compopt -o nospace
             return 1
         fi
         return 2

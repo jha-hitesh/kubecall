@@ -122,6 +122,9 @@ EndOfMessage
                 fi
                 kubectl config use-context ${context_list_array[$context_no - 1]}
                 return 1
+            else
+                echo -e "available commands:\n 1.current - shows current context \n 2.list - lists contexts \n 3.switch <context_name> - switches to given context \n"
+                return 0
             fi
         fi
         return 2
@@ -149,7 +152,7 @@ EndOfMessage
                 echo "Please provide the command which will be executed on pods identified by $2"
                 return 0
             fi
-            echo "Remember to escape quotes, slashes, $ sign etc. in your command for it to properly work."
+            echo "Remember to quote your command if it is longer than 1 word for it to properly work."
         else
             if [[ -z $3 ]]; then
                 echo "Please provide a pod name pattern"
@@ -158,10 +161,8 @@ EndOfMessage
             pod_pattern=$3
         fi
         if [[ -z $pod_pattern ]]; then
-            echo "kubectl get pods ${kc_f_and_o[--context]}"
             pod_list=$(kubectl get pods ${kc_f_and_o["--context"]})
         else
-            echo "kubectl get pods ${kc_f_and_o["--context"]} | grep $pod_pattern"
             pod_list=$(kubectl get pods ${kc_f_and_o["--context"]} | grep $pod_pattern)
         fi
         pod_list_array=($pod_list)
@@ -183,11 +184,10 @@ EndOfMessage
             read confirm_action
             if [[ $confirm_action == "yes" ]]; then
                 executable_cmd="${@}"
-                for i in ${pod_list_array[@]}
+                for ((i = 0 ; i < $pod_list_array_length ; i+=5))
                     do
-                        echo "running for pod: $i"
-                        echo "kubectl ${kc_f_and_o["--context"]} exec -- bash -c $executable_cmd"
-                        action_result=$(kubectl ${kc_f_and_o["--context"]} exec -- bash -c "$executable_cmd")
+                        echo "running for pod: ${pod_list_array[i]}"
+                        action_result=$(kubectl ${kc_f_and_o["--context"]} exec ${pod_list_array[i]} -- bash -c "$executable_cmd")
                         echo $action_result
                     done
                 echo "Execution Completed, exitting."
@@ -201,7 +201,7 @@ EndOfMessage
             declare -a to_be_deleted
             if [[ ${#pod_list_array[@]} == 5 ]]; then
                 to_be_deleted+=(${pod_list_array[0]})
-                echo "Do you want to delete all above pod, continue Yes or No?"
+                echo "Do you want to delete above pod, continue Yes or No?"
             else
                 echo "Select pods to delete by range or single selection"
                 echo "eg. 1-4,7-9,12,14 or presse enter to cancel deletion"
@@ -233,8 +233,7 @@ EndOfMessage
             read confirm_action
             if [[ $confirm_action == "yes" ]]; then
                 echo "deleting pods..."
-                echo "kubectl ${kc_f_and_o["--context"]} delete pod ${to_be_deleted[@]}"
-                # kubectl ${kc_f_and_o["--context"]} delete pod ${to_be_deleted[@]}
+                kubectl ${kc_f_and_o["--context"]} delete pod ${to_be_deleted[@]}
                 return 1
             else
                 echo "Invalid input exitting."
@@ -256,7 +255,6 @@ EndOfMessage
         fi
 
         if [[ $1 = $LOGS ]]; then
-            echo "kubectl ${kc_f_and_o["--context"]} logs ${kc_f_and_o["-f"]} ${kc_f_and_o["--follow"]} ${kc_f_and_o["--tail"]} ${pod_list_array[$pod_index]}"
             kubectl ${kc_f_and_o["--context"]} logs ${kc_f_and_o["-f"]} ${kc_f_and_o["--follow"]} ${kc_f_and_o["--tail"]} ${pod_list_array[$pod_index]}
             return 1
         fi
@@ -264,13 +262,11 @@ EndOfMessage
         if [[ $1 == $EXEC ]]; then
             shift;shift
             executable_cmd="${@}"
-            echo "kubectl ${kc_f_and_o["--context"]} exec ${kc_f_and_o["-i"]} ${kc_f_and_o["-it"]} ${kc_f_and_o["-t"]} ${pod_list_array[$pod_index]} $executable_cmd"
             kubectl ${kc_f_and_o["--context"]} exec ${kc_f_and_o["-i"]} ${kc_f_and_o["-it"]} ${kc_f_and_o["-t"]} ${pod_list_array[$pod_index]} "$executable_cmd"
             return 1
         fi
 
         if [[ $1 == $DESCRIBE ]]; then
-            echo "kubectl ${kc_f_and_o["--context"]} describe pods/${pod_list_array[$pod_index]}"
             kubectl ${kc_f_and_o["--context"]} describe pods/${pod_list_array[$pod_index]}
             return 1
         fi
