@@ -122,6 +122,9 @@ EndOfMessage
                 fi
                 kubectl config use-context ${context_list_array[$context_no - 1]}
                 return 1
+            else
+                echo -e "available commands:\n 1.current - shows current context \n 2.list - lists contexts \n 3.switch <context_name> - switches to given context \n"
+                return 0
             fi
         fi
         return 2
