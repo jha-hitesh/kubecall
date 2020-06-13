@@ -34,7 +34,8 @@ function kubecall_help() {
                                    --context=<context_name< flag.
     $LOGS <pod_pattern>                                : tries to fetch logs of pod identified by <pod_pattern> from
                                                       current context, allows selection if more than 1 pod is found.
-                                                      supports --context=<context_name>, --follow, --tail=<number>
+                                                      supports --context=<context_name>, --follow, --tail=<number>,
+                                                      --json
 
     $EXEC <pod_pattern> <CMD>                          : executes a <CMD> on a pod name identified by <pod_pattern>
                                                       from current context, allows selection If more than 1 pod is found.
@@ -255,7 +256,10 @@ EndOfMessage
         fi
 
         if [[ $1 = $LOGS ]]; then
-            kubectl ${kc_f_and_o["--context"]} logs ${kc_f_and_o["-f"]} ${kc_f_and_o["--follow"]} ${kc_f_and_o["--tail"]} ${pod_list_array[$pod_index]}
+            if [[ -z ${kc_f_and_o["--json"]} ]] then:
+                kubectl ${kc_f_and_o["--context"]} logs ${kc_f_and_o["-f"]} ${kc_f_and_o["--follow"]} ${kc_f_and_o["--tail"]} ${pod_list_array[$pod_index]}
+            else
+                kubectl ${kc_f_and_o["--context"]} logs ${kc_f_and_o["-f"]} ${kc_f_and_o["--follow"]} ${kc_f_and_o["--tail"]} ${pod_list_array[$pod_index]} | jq -R -r '. as $line | try fromjson catch $line'
             return 1
         fi
 
