@@ -30,7 +30,7 @@ Adds following command chain:
 * `execall <deployment_pattern> <CMD>` with optional `--context=<context_name>` executes given command on all the pods matching deployment_pattern after confirmation.
 
 modifies a set of commands with given syntax.
-* `logs <deployment_pattern>` with optional `--context=<context_name>` and one of (`-f`, `--follow`, `--tail=<log_count>`)
+* `logs <deployment_pattern>` with optional `--context=<context_name>` and `--json` and one of (`-f`, `--follow`, `--tail=<log_count>`)
 * `exec <deployment_pattern> <CMD>` with optional `--context=<context_name>` and one of (`-i`, `-t`, `-it`)
 * `describe <deployment_pattern>` with optional `--context=<context_name>`
 * `get pods <deployment_pattern>` with optional `--context=<context_name>`

@@ -19,7 +19,7 @@ function completion_kubecall_main() {
             return 1
 
         elif [[ ${args[-1]} == -* ]];then
-            COMPREPLY=($(compgen -W "--follow --tail= -f -i -t -it --context=" "\-${args[-1]#"-"}"))
+            COMPREPLY=($(compgen -W "--follow --json --tail= -f -i -t -it --context=" "\-${args[-1]#"-"}"))
             [[ $COMPREPLY == *= ]] && compopt -o nospace
             return 1
         fi
