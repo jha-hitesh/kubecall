@@ -256,10 +256,11 @@ EndOfMessage
         fi
 
         if [[ $1 = $LOGS ]]; then
-            if [[ -z ${kc_f_and_o["--json"]} ]] then:
+            if [[ -z ${kc_f_and_o["--json"]} ]]; then
                 kubectl ${kc_f_and_o["--context"]} logs ${kc_f_and_o["-f"]} ${kc_f_and_o["--follow"]} ${kc_f_and_o["--tail"]} ${pod_list_array[$pod_index]}
             else
                 kubectl ${kc_f_and_o["--context"]} logs ${kc_f_and_o["-f"]} ${kc_f_and_o["--follow"]} ${kc_f_and_o["--tail"]} ${pod_list_array[$pod_index]} | jq -R -r '. as $line | try fromjson catch $line'
+            fi
             return 1
         fi
 
