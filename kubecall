@@ -14,6 +14,7 @@ function kubecall_main() {
     EXEC="exec"
     EXECALL="execall"
     LINE_SEPERATOR="\n"
+    PORT_FORWARD="port-forward"
 
 function kubecall_help() {
  KUBECTL_HELP=$(kubectl --help)
@@ -131,7 +132,7 @@ EndOfMessage
         return 2
     }
     function handle_pod_operation() {
-        if [[ $1 != $GET ]] && [[ $1 != $DESCRIBE ]] && [[ $1 != $DELETE ]] && [[ $1 != $LOGS ]] && [[ $1 != $EXEC ]] && [[ $1 != $EXECALL ]]; then
+        if [[ $1 != $GET ]] && [[ $1 != $DESCRIBE ]] && [[ $1 != $DELETE ]] && [[ $1 != $LOGS ]] && [[ $1 != $EXEC ]] && [[ $1 != $EXECALL ]] && [[ $1 != $PORT_FORWARD ]]; then
             return 2
         fi
         if [[ $1 == $GET ]] && [[ $2 != $PODS ]]; then
@@ -143,7 +144,7 @@ EndOfMessage
         if [[ $1 == $DELETE ]] && [[ $2 != $POD ]]; then
             return 2
         fi
-        if [[ $1 == $EXEC ]] || [[ $1 == $EXECALL ]] || [[ $1 == $LOGS ]]; then
+        if [[ $1 == $EXEC ]] || [[ $1 == $EXECALL ]] || [[ $1 == $LOGS ]] || [[ $1 == $PORT_FORWARD ]]; then
             if [[ -z $2 ]]; then
                 echo "Please provide a pod name pattern"
                 return 0
@@ -151,6 +152,10 @@ EndOfMessage
             pod_pattern=$2
             if [[ $1 != $LOGS ]] && [[ -z $3 ]]; then
                 echo "Please provide the command which will be executed on pods identified by $2"
+                return 0
+            fi
+            if [[ $1 == $PORT_FORWARD ]] && [[ -z $3 ]]; then
+                echo "please provide local_port:remote_port to forward request from local_port to remote_port"
                 return 0
             fi
             echo "Remember to quote your command if it is longer than 1 word for it to properly work."
@@ -273,6 +278,11 @@ EndOfMessage
 
         if [[ $1 == $DESCRIBE ]]; then
             kubectl ${kc_f_and_o["--context"]} describe pods/${pod_list_array[$pod_index]}
+            return 1
+        fi
+
+        if [[ $1 == $PORT_FORWARD ]]; then
+            kubectl ${kc_f_and_o["--context"]} "$PORT_FORWARD" pods/${pod_list_array[$pod_index]} "$3"
             return 1
         fi
         return 1

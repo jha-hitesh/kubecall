@@ -126,14 +126,14 @@ function completion_kubecall_main() {
     elif [[ ${args[1]} == "delete" ]]; then
         remove_first_index_element
         delete_options
-    elif [[ ${args[1]} == "logs" ]]; then
+    elif [[ ${args[1]} == "logs" ]] || [[ ${args[1]} == "port-forward" ]]; then
         remove_first_index_element
         deployment_name_options
     elif [[ ${args[1]} == "exec" ]] || [[ ${args[1]} == "execall" ]]; then
         remove_first_index_element
         deployment_name_options
     else
-        COMPREPLY=($(compgen -W "context get logs describe delete exec execall" "${args[1]}"))
+        COMPREPLY=($(compgen -W "context get logs describe delete exec execall port-forward" "${args[1]}"))
     fi
 }
 complete -F completion_kubecall_main kubecall;
