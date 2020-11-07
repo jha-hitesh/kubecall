@@ -3,7 +3,8 @@ kubecall is a bash wrapper around kubectl (kubernetes management command line), 
 
 ## Inspiration
 * The inspiration for **kubecall** came to solve the daily kubernetes workflows which are generally two steps. A multi clustor enviornment running diverse set of pods usually demands context switching for almost every pod interaction.
-**kubecall** solves this by merging context switching and resource interaction commands together in same line coupled with autocompleton for context names and deployment names.
+**kubecall** solves this by merging context switching and resource interaction commands together in same line coupled with autocompleton for context names and deployment names and also providing option to select a pod from list.
+* Overall it makes sure you don't have to run more than 1 command to do a job.
 
 ## Getting Started
 
@@ -34,6 +35,7 @@ modifies a set of commands with given syntax.
 * `exec <deployment_pattern> <CMD>` with optional `--context=<context_name>` and one of (`-i`, `-t`, `-it`)
 * `describe <deployment_pattern>` with optional `--context=<context_name>`
 * `get pods <deployment_pattern>` with optional `--context=<context_name>`
+* `port-forward <deployment_pattern> <local_port:remote_port>` with optional `--context=<context_name>`
 * `delete <deployment_pattern>` with optional `--context=<context_name>` deletes pods matching given pattern after selection and confirmation.
 
 In any command press tab twice to get suggestion for context_name and deployment_pattern or simply for next command.
